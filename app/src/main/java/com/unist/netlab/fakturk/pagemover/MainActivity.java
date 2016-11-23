@@ -75,7 +75,7 @@ public class MainActivity extends AppCompatActivity
             public void onReceive(Context context, Intent intent)
             {
 
-                marginParams.setMargins(250, 250, 250, 250);
+//                marginParams.setMargins(250, 250, 250, 250);
 
                 RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(marginParams);
                 netlab.setLayoutParams(layoutParams);
