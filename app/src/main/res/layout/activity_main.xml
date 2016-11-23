@@ -41,4 +41,14 @@
 
     </WebView>
 
+    <Switch
+        android:text="Only Gyr"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/switch_gyr"
+        android:layout_alignBaseline="@+id/buttonStart"
+        android:layout_alignBottom="@+id/buttonStart"
+        android:layout_toEndOf="@+id/buttonStart"
+        android:layout_marginStart="18dp" />
+
 </RelativeLayout>

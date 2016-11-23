@@ -14,6 +14,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.RelativeLayout;
+import android.widget.Switch;
 
 import static android.hardware.SensorManager.GRAVITY_EARTH;
 
@@ -21,11 +22,12 @@ public class MainActivity extends AppCompatActivity
 {
     WebView netlab;
     Button buttonStart;
+    Switch switch_gyr;
     ViewGroup.MarginLayoutParams marginParams;
 
     float[] acc, gyr, oldAcc, oldGyr, gravity,sideY,sideX, oldGravity, rotatedGyr;
     float[][] rotation, resultOfDynamic;
-    boolean start;
+    boolean start, onlyGyr;
 
     Gravity g;
     Orientation orientation;
@@ -40,6 +42,7 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         buttonStart = (Button) findViewById(R.id.buttonStart);
+        switch_gyr = (Switch) findViewById(R.id.switch_gyr);
 
         netlab = (WebView) findViewById(R.id.webView);
         netlab.setWebViewClient(new MyWebViewClient());
@@ -68,6 +71,9 @@ public class MainActivity extends AppCompatActivity
         omega_y =0;
         omega_z =0;
 
+        start = false;
+        onlyGyr = false;
+
 
         LocalBroadcastManager.getInstance(this).registerReceiver(new BroadcastReceiver()
         {
@@ -80,9 +86,7 @@ public class MainActivity extends AppCompatActivity
                 RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(marginParams);
                 netlab.setLayoutParams(layoutParams);
 
-                netlab.setRotation(omega_z*10);
-                netlab.setRotationX(omega_x*10);
-                netlab.setRotationY(-1*omega_y*10);
+
 
                 acc = (intent.getFloatArrayExtra("ACC_DATA"));
                 gyr = intent.getFloatArrayExtra("GYR_DATA");
@@ -176,6 +180,19 @@ public class MainActivity extends AppCompatActivity
                     //store acc values
                     System.arraycopy(acc, 0, oldAcc, 0, acc.length);
 
+                    if (onlyGyr)
+                    {
+                        netlab.setRotation(omega_z*10);
+                        netlab.setRotationX(omega_x*10);
+                        netlab.setRotationY(-1*omega_y*10);
+                    }
+                    else
+                    {
+
+                    }
+
+
+
 
 
 
@@ -195,6 +212,19 @@ public class MainActivity extends AppCompatActivity
                     stopService(new Intent(MainActivity.this, SensorService.class));
 
 
+                }
+            }
+        });
+        switch_gyr.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (switch_gyr.isChecked())
+                {
+                    onlyGyr=true;
+                }
+                else
+                {
+                    onlyGyr = false;
                 }
             }
         });
