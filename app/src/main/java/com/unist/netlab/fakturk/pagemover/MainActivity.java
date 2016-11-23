@@ -76,8 +76,13 @@ public class MainActivity extends AppCompatActivity
             {
 
                 marginParams.setMargins(250, 250, 250, 250);
+
                 RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(marginParams);
                 netlab.setLayoutParams(layoutParams);
+
+                netlab.setRotation(omega_z*10);
+                netlab.setRotationX(omega_x*10);
+                netlab.setRotationY(-1*omega_y*10);
 
                 acc = (intent.getFloatArrayExtra("ACC_DATA"));
                 gyr = intent.getFloatArrayExtra("GYR_DATA");
