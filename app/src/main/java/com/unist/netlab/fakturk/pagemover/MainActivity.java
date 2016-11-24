@@ -8,32 +8,36 @@ import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
-import android.widget.RelativeLayout;
 import android.widget.Switch;
 
 import static android.hardware.SensorManager.GRAVITY_EARTH;
 
 public class MainActivity extends AppCompatActivity
 {
+
     WebView netlab;
-    Button buttonStart;
-    Switch switch_gyr;
+    Button buttonStart, buttonReset;
+    Switch switchGyr, switchAcc, switchReset, switchSmooth;
     ViewGroup.MarginLayoutParams marginParams;
 
-    float[] acc, gyr, oldAcc, oldGyr, gravity,sideY,sideX, oldGravity, rotatedGyr;
+
+
+    float[] acc, gyr, oldAcc, oldGyr, gravity, sideY, sideX, oldGravity, rotatedGyr, rotational_vel, rotational_vel_earth;
     float[][] rotation, resultOfDynamic;
-    boolean start, onlyGyr;
+    boolean start, onlyGyr, accEnable, resetEnable, smoothEnable;
 
     Gravity g;
     Orientation orientation;
     DynamicAcceleration dynamic;
     int counter;
-    float omega_x,omega_y, omega_z;
+    float omega_x, omega_y, omega_z;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -42,7 +46,11 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         buttonStart = (Button) findViewById(R.id.buttonStart);
-        switch_gyr = (Switch) findViewById(R.id.switch_gyr);
+        buttonReset = (Button) findViewById(R.id.buttonReset);
+        switchGyr = (Switch) findViewById(R.id.switch_gyr);
+        switchAcc = (Switch) findViewById(R.id.switchAcc);
+        switchReset = (Switch) findViewById(R.id.switchReset);
+        switchSmooth = (Switch) findViewById(R.id.switchSmoothReset);
 
         netlab = (WebView) findViewById(R.id.webView);
         netlab.setWebViewClient(new MyWebViewClient());
@@ -62,18 +70,22 @@ public class MainActivity extends AppCompatActivity
         rotation = null;
         rotatedGyr = new float[3];
         resultOfDynamic = new float[5][3];
+        rotational_vel = new float[]{0,0,0};
+        rotational_vel_earth = new float[]{0,0,0};
 
         g = new Gravity();
         orientation = new Orientation();
         dynamic = new DynamicAcceleration();
-        counter=0;
-        omega_x =0;
-        omega_y =0;
-        omega_z =0;
+        counter = 0;
+        omega_x = 0;
+        omega_y = 0;
+        omega_z = 0;
 
         start = false;
         onlyGyr = false;
-
+        accEnable=false;
+        resetEnable=false;
+        smoothEnable=false;
 
         LocalBroadcastManager.getInstance(this).registerReceiver(new BroadcastReceiver()
         {
@@ -83,9 +95,8 @@ public class MainActivity extends AppCompatActivity
 
 //                marginParams.setMargins(250, 250, 250, 250);
 
-                RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(marginParams);
-                netlab.setLayoutParams(layoutParams);
-
+//                RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(marginParams);
+//                netlab.setLayoutParams(layoutParams);
 
 
                 acc = (intent.getFloatArrayExtra("ACC_DATA"));
@@ -127,6 +138,7 @@ public class MainActivity extends AppCompatActivity
                     rotation = orientation.rotationFromGravity(gravity);
 
 
+
                 }
                 if (start)
                 {
@@ -138,38 +150,68 @@ public class MainActivity extends AppCompatActivity
                     if ((Math.abs(gyr[0]) + Math.abs(gyr[1]) + Math.abs(gyr[2])) < thresholdGyr)
                     {
 
-                        System.out.print("stable, ");
+//                        System.out.print("stable, ");
                         if (counter > 10) //if phone is stable over a second
                         {
+                            if (resetEnable)
+                            {
+                                if (smoothEnable)
+                                {
+                                    smoothReset(2);
+                                }
+                                else
+                                {
+                                    reset();
+                                }
+                            }
+
+
+//                            reset();
                             for (int j = 0; j < 3; j++)
                             {
                                 gravity[j] = acc[j] * (GRAVITY_EARTH / accNorm);
 
+
                             }
+
 
                             counter = 0;
                         } else
                         {
+
+
                             counter++;
+
+
                         }
 
 
                     } else // not stable
                     {
-                        System.out.print("not stable, ");
+//                        System.out.print("not stable, ");
                         counter = 0;
 
                         rotation = orientation.rotationFromGravity(gravity);
+                        rotational_vel[0] += gyr[0] * dynamic.getDeltaT();
+                        rotational_vel[1] += gyr[1] * dynamic.getDeltaT();
+                        rotational_vel[2] += gyr[2] * dynamic.getDeltaT();
+
+                        rotatedGyr = orientation.rotatedGyr(gyr, rotation);
+
                         omega_x += rotatedGyr[0] * dynamic.getDeltaT();
                         omega_y += rotatedGyr[1] * dynamic.getDeltaT();
                         omega_z += rotatedGyr[2] * dynamic.getDeltaT();
-
-                        rotatedGyr = orientation.rotatedGyr(gyr, rotation);
                         rotation = orientation.updateRotationMatrix(rotation, rotatedGyr, dynamic.getDeltaT());
 
                         gravity = g.gravityAfterRotation(rotation);
 
                         rotation = orientation.updateRotationAfterOmegaZ(rotation, omega_z);
+                        float[] reRotatedGyr = orientation.reRotatedGyr(rotatedGyr,rotation);
+
+                        rotational_vel_earth[0]+=reRotatedGyr[0]* dynamic.getDeltaT();
+                        rotational_vel_earth[1]+=reRotatedGyr[1]* dynamic.getDeltaT();
+                        rotational_vel_earth[2]+=reRotatedGyr[2]* dynamic.getDeltaT();
+
                         sideX = g.sideXAfterRotation(rotation);
                         sideY = g.sideYAfterRotation(rotation);
 
@@ -182,32 +224,34 @@ public class MainActivity extends AppCompatActivity
 
                     if (onlyGyr)
                     {
-                        netlab.setRotation(omega_z*10);
-                        netlab.setRotationX(omega_x*10);
-                        netlab.setRotationY(-1*omega_y*10);
-                    }
-                    else
+                        netlab.setRotation(rotational_vel[2] * 10);
+                        netlab.setRotationX(rotational_vel[0] * 10);
+                        netlab.setRotationY(-1 * rotational_vel[1] * 10);
+                    } else
                     {
-
+                        netlab.setRotation(rotational_vel_earth[2] * 10);
+                        netlab.setRotationX(rotational_vel_earth[0] * 10);
+                        netlab.setRotationY(-1 * rotational_vel_earth[1] * 10);
                     }
-
-
-
-
 
 
                 }
             }
         }, new IntentFilter(SensorService.ACTION_SENSOR_BROADCAST));
 
-        buttonStart.setOnClickListener(new View.OnClickListener() {
+        buttonStart.setOnClickListener(new View.OnClickListener()
+        {
             @Override
-            public void onClick(View v) {
-                if (buttonStart.getText().equals("Start")) {
+            public void onClick(View v)
+            {
+
+                if (buttonStart.getText().equals("Start"))
+                {
                     buttonStart.setText("Stop");
                     startService(new Intent(MainActivity.this, SensorService.class));
 
-                } else {
+                } else
+                {
                     buttonStart.setText("Start");
                     stopService(new Intent(MainActivity.this, SensorService.class));
 
@@ -215,31 +259,226 @@ public class MainActivity extends AppCompatActivity
                 }
             }
         });
-        switch_gyr.setOnClickListener(new View.OnClickListener() {
+
+        buttonReset.setOnClickListener(new View.OnClickListener()
+        {
             @Override
-            public void onClick(View view) {
-                if (switch_gyr.isChecked())
+            public void onClick(View v)
+            {
+//                acc= new float[]{0, 0, 0};
+//                gyr = new float[]{0, 0, 0};
+
+               reset();
+            }
+        });
+
+
+        switchGyr.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View view)
+            {
+
+                if (switchGyr.isChecked())
                 {
-                    onlyGyr=true;
-                }
-                else
+                    onlyGyr = true;
+                    switchReset.setEnabled(false);
+                    switchSmooth.setEnabled(false);
+                } else
                 {
                     onlyGyr = false;
+                    switchReset.setEnabled(true);
+                    switchSmooth.setEnabled(true);
                 }
             }
         });
+
+        switchAcc.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View view)
+            {
+
+                if (switchAcc.isChecked())
+                {
+                    accEnable = true;
+                } else
+                {
+                    accEnable = false;
+                }
+            }
+        });
+
+        switchReset.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View view)
+            {
+
+                if (switchReset.isChecked())
+                {
+                    resetEnable = true;
+                    switchSmooth.setEnabled(true);
+                } else
+                {
+                    resetEnable = false;
+                    switchSmooth.setEnabled(false);
+                    switchSmooth.setChecked(false);
+                    smoothEnable=false;
+                }
+            }
+        });
+
+        switchSmooth.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View view)
+            {
+
+                if (switchSmooth.isChecked())
+                {
+                    smoothEnable = true;
+                } else
+                {
+                    smoothEnable = false;
+                }
+            }
+        });
+
+
+
+
     }
+
+    private void smoothReset(float factor)
+    {
+//            float factor=10f;
+
+            for (int j = 0; j < 3; j++)
+            {
+//                acc[j]/=factor;
+//                gyr[j]/=factor;
+
+                rotational_vel_earth[j]/=factor;
+            }
+            omega_x/=factor;
+            omega_y /=factor;
+            omega_z /=factor;
+
+        System.out.println("rotation before: "+netlab.getRotation());
+            netlab.setRotation(netlab.getRotation()/factor);
+        System.out.println("rotation after: "+netlab.getRotation());
+            netlab.setRotationX(netlab.getRotationX()/factor);
+            netlab.setRotationY(netlab.getRotationY()/factor);
+
+//        acc= new float[]{0, 0, 0};
+//        gyr = new float[]{0, 0, 0};
+//        omega_x =0;
+//        omega_y =0;
+//        omega_z =0;
+//        rotational_vel_earth[0] = 0;
+//        rotational_vel_earth[1] = 0;
+//        rotational_vel_earth[2] = 0;
+//
+//        netlab.setRotation(0);
+//        netlab.setRotationX(0);
+//        netlab.setRotationY(0);
+    }
+
+    private void reset()
+    {
+
+
+
+        netlab.setRotation(0);
+        netlab.setRotationX(0);
+        netlab.setRotationY(0);
+        omega_x =0;
+        omega_y =0;
+        omega_z =0;
+        rotational_vel_earth[0] = 0;
+        rotational_vel_earth[1] = 0;
+        rotational_vel_earth[2] = 0;
+        rotational_vel=new float[]{0, 0, 0};
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        int action = event.getAction();
+        int keyCode = event.getKeyCode();
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_VOLUME_UP:
+                if (action == KeyEvent.ACTION_DOWN) {
+                    //TODO
+                    netlab.setScrollY(netlab.getScrollY()-100);
+                }
+                return true;
+            case KeyEvent.KEYCODE_VOLUME_DOWN:
+                if (action == KeyEvent.ACTION_DOWN) {
+                    //TODO
+                    netlab.setScrollY(netlab.getScrollY()+100);
+                }
+                return true;
+            default:
+                return super.dispatchKeyEvent(event);
+        }
+    }
+
 
     public class MyWebViewClient extends WebViewClient
     {
 
-        public MyWebViewClient() {
+        public MyWebViewClient()
+        {
+
             super();
             //start anything you need to
         }
 
-        public void onPageStarted(WebView view, String url, Bitmap favicon) {
+        public void onPageStarted(WebView view, String url, Bitmap favicon)
+        {
             //Do something to the urls, views, etc.
         }
+    }
+
+    @Override
+    protected void onPause() {
+
+        super.onPause();
+
+
+    }
+
+
+    @Override
+    protected void onResume() {
+
+        super.onResume();
+//        startService(new Intent(this, SensorService.class));
+    }
+
+
+    @Override
+    protected void onDestroy() {
+
+
+        super.onDestroy();
+    }
+
+
+    @Override
+    public void onStart() {
+
+        super.onStart();
+
+
+    }
+
+    @Override
+    public void onStop() {
+
+        super.onStop();
+
+
     }
 }

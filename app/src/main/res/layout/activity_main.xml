@@ -11,11 +11,50 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.unist.netlab.fakturk.pagemover.MainActivity">
 
+    <WebView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+
+        android:layout_below="@+id/textView"
+        android:id="@+id/webView"
+        android:layout_above="@+id/switchAcc">
+
+    </WebView>
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Hello World!"
         android:id="@+id/textView"/>
+
+    <Switch
+        android:text="Smooth"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/switchSmoothReset"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:textSize="12sp"
+        android:layout_toEndOf="@+id/switchAcc"
+        android:enabled="false"/>
+
+    <Switch
+        android:text="Reset"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/switchReset"
+        android:layout_below="@+id/webView"
+        android:layout_alignParentEnd="true"
+        android:layout_toEndOf="@+id/switchAcc"/>
+
+    <Switch
+        android:text="Only Gyr"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/switch_gyr"
+        android:layout_alignParentBottom="true"
+        android:layout_alignStart="@+id/switchAcc"
+        android:layout_toStartOf="@+id/switchReset"/>
 
     <Button
         android:text="Start"
@@ -24,31 +63,31 @@
         android:layout_x="0dp"
         android:layout_y="432dp"
         android:id="@+id/buttonStart"
+        android:elevation="24dp"
+        style="@style/Widget.AppCompat.Button.Small"
+        android:textSize="12sp"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentStart="true"
-        android:elevation="24dp"/>
+        android:layout_alignParentStart="true"/>
 
-    <WebView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_above="@+id/buttonStart"
-        android:layout_marginBottom="20dp"
-        android:layout_marginTop="20dp"
-        android:layout_marginLeft="20dp"
-        android:layout_marginRight="20dp"
-        android:layout_below="@+id/textView"
-        android:id="@+id/webView">
-
-    </WebView>
-
-    <Switch
-        android:text="Only Gyr"
+    <Button
+        android:text="Reset"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/switch_gyr"
-        android:layout_alignBaseline="@+id/buttonStart"
-        android:layout_alignBottom="@+id/buttonStart"
-        android:layout_toEndOf="@+id/buttonStart"
-        android:layout_marginStart="18dp" />
+        android:layout_x="0dp"
+        android:layout_y="432dp"
+        android:id="@+id/buttonReset"
+        android:elevation="24dp"
+        style="@style/Widget.AppCompat.Button.Small"
+        android:textSize="12sp"
+        android:layout_alignParentBottom="true"
+        android:layout_toEndOf="@+id/buttonStart"/>
+
+    <Switch
+        android:text="Acc Enable"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/switchAcc"
+        android:layout_above="@+id/switchSmoothReset"
+        android:layout_toEndOf="@+id/buttonReset"/>
 
 </RelativeLayout>

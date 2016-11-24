@@ -109,6 +109,21 @@ public class Orientation
         }
         return rotated;
     }
+    float[] reRotatedGyr(float[] gyr, float[][] R)
+    {
+        float[] rotated= new float[3];
+
+
+        for (int i = 0; i < 3; i++)
+        {
+            rotated[i]=0;
+            for (int j = 0; j < 3; j++)
+            {
+                rotated[i]+= R[i][j]*gyr[j];
+            }
+        }
+        return rotated;
+    }
 
     float[][] rotationTransform(float[][] R)
     {
@@ -161,11 +176,11 @@ public class Orientation
         float[][] newRotation = new float[3][3];
 
 //        printRotation(R);
-        if ((Math.abs(gyr[0])+Math.abs(gyr[1])+Math.abs(gyr[2]))>0)
-        {
-            System.out.println("gyr bigger than 0");
-            System.out.println(deltaT);
-        }
+//        if ((Math.abs(gyr[0])+Math.abs(gyr[1])+Math.abs(gyr[2]))>0)
+//        {
+//            System.out.println("gyr bigger than 0");
+//            System.out.println(deltaT);
+//        }
 
 
             newRotation[0][0] = R[0][0]+(R[0][1]*(-1)*gyr[2]+R[0][2]*gyr[1])*deltaT;
